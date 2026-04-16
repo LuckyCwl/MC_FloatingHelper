@@ -65,7 +65,7 @@ public class FloatingHelperClient implements ClientModInitializer {
 
                 ScreenMouseEvents.afterMouseClick(screen).register((currentScreen, click, doubleClick) -> {
                     if (FloatingHelperConfigManager.get().showOnTitleScreen
-                            && FloatingHelperTitleDialog.isInsideDialog(click.x(), click.y(), currentScreen.width, currentScreen.height)) {
+                            && isInsideFloatingIcon(click.x(), click.y(), currentScreen.width, currentScreen.height)) {
                         FloatingHelperTitleDialog.advanceMessage();
                     }
 
@@ -126,5 +126,14 @@ public class FloatingHelperClient implements ClientModInitializer {
     private static boolean shouldAutoMirror(FloatingHelperConfig config, int screenWidth) {
         int centerX = config.x + config.width / 2;
         return centerX > screenWidth / 2;
+    }
+
+    private static boolean isInsideFloatingIcon(double mouseX, double mouseY, int screenWidth, int screenHeight) {
+        FloatingHelperConfig config = FloatingHelperConfigManager.get();
+        FloatingHelperConfigManager.ensureValidBounds(screenWidth, screenHeight);
+        return mouseX >= config.x
+                && mouseX <= config.x + config.width
+                && mouseY >= config.y
+                && mouseY <= config.y + config.height;
     }
 }
