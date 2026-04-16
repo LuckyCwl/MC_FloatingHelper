@@ -1,5 +1,5 @@
 {
-  "modmenu.descriptionTranslation.floatinghelper": "Configure the floating character and title-screen dialog shown by FloatingHelper.",
+  "modmenu.descriptionTranslation.floatinghelper": "Configure the floating character and title-screen speaking text shown by FloatingHelper.",
   "key.category.floatinghelper": "FloatingHelper",
   "key.floatinghelper.toggle_visibility": "Toggle FloatingHelper visibility",
   "key.floatinghelper.open_config": "Open FloatingHelper config"
