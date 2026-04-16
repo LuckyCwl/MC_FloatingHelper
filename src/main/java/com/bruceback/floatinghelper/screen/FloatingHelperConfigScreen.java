@@ -33,6 +33,33 @@ public class FloatingHelperConfigScreen extends Screen {
 
     @Override
     protected void init() {
+        if (client != null) {
+            FloatingHelperConfig config = FloatingHelperConfigManager.get();
+            int panelWidth = 300;
+            int left = (width - panelWidth) / 2;
+            int top = height / 2 - 36;
+
+            clearChildren();
+
+            CyclingButtonWidget<Boolean> showButton = CyclingButtonWidget.onOffBuilder(config.showOnTitleScreen)
+                    .build(left, top, panelWidth, 20, Text.literal("Show / Hide"), (button, value) -> {
+                        FloatingHelperConfig updatedConfig = copyOf(FloatingHelperConfigManager.get());
+                        updatedConfig.showOnTitleScreen = value;
+                        FloatingHelperConfigManager.update(updatedConfig);
+                    });
+            addDrawableChild(showButton);
+
+            addDrawableChild(ButtonWidget.builder(Text.literal("Edit Position & Size"), button ->
+                            client.setScreen(new FloatingHelperLayoutScreen(this, copyOf(FloatingHelperConfigManager.get()))))
+                    .dimensions(left, top + 30, panelWidth, 20)
+                    .build());
+
+            addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
+                    .dimensions(left, top + 68, panelWidth, 20)
+                    .build());
+            return;
+        }
+
         workingCopy = copyOf(FloatingHelperConfigManager.get());
 
         int panelWidth = 320;
@@ -84,7 +111,25 @@ public class FloatingHelperConfigScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
+        if (client != null) {
+            context.fill(0, 0, width, height, 0x88000000);
+
+            int panelWidth = 300;
+            int panelHeight = 120;
+            int left = (width - panelWidth) / 2;
+            int top = height / 2 - 56;
+
+            context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF);
+            context.fill(left - 8, top - 8, left + panelWidth + 8, top + panelHeight + 8, 0xAA000000);
+            drawBorder(context, left - 8, top - 8, panelWidth + 16, panelHeight + 16, 0xFF6B6B6B);
+            context.drawTextWithShadow(textRenderer, Text.literal("Mod Menu Settings"), left, top - 18, 0xE0E0E0);
+            context.drawTextWithShadow(textRenderer, Text.literal("Toggle visibility or open the layout editor."), left, top + 2, 0xC8C8C8);
+
+            super.render(context, mouseX, mouseY, deltaTicks);
+            return;
+        }
+
+        context.fill(0, 0, width, height, 0x88000000);
 
         int panelWidth = 320;
         int panelHeight = 182;
@@ -108,6 +153,16 @@ public class FloatingHelperConfigScreen extends Screen {
         drawBorder(context, previewX - 6, previewY - 6, previewSize + 12, previewSize + 12, 0xFF8A8A8A);
         FloatingIconWidget.render(context, previewX, previewY, previewSize, previewSize);
         context.drawTextWithShadow(textRenderer, Text.literal("拖拽与缩放在编辑层中进行"), left, top + 124, 0xA0A0A0);
+    }
+
+    @Override
+    public void close() {
+        if (client != null) {
+            client.setScreen(parent);
+            return;
+        }
+
+        super.close();
     }
 
     private void drawBorder(DrawContext context, int x, int y, int width, int height, int color) {

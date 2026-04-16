@@ -56,7 +56,6 @@ public class FloatingHelperLayoutScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
         context.fill(0, 0, width, height, 0x88000000);
 
         FloatingIconWidget.render(context, workingCopy.x, workingCopy.y, workingCopy.width, workingCopy.height);
