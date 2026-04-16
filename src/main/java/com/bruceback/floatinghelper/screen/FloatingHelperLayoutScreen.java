@@ -2,6 +2,7 @@ package com.bruceback.floatinghelper.screen;
 
 import com.bruceback.floatinghelper.config.FloatingHelperConfig;
 import com.bruceback.floatinghelper.config.FloatingHelperConfigManager;
+import com.bruceback.floatinghelper.dialog.FloatingHelperTitleDialog;
 import com.bruceback.floatinghelper.renderer.FloatingIconWidget;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -42,7 +43,6 @@ public class FloatingHelperLayoutScreen extends Screen {
                     workingCopy.height = FloatingHelperConfig.DEFAULT_HEIGHT;
                     workingCopy.x = width - workingCopy.width - FloatingHelperConfig.DEFAULT_MARGIN;
                     workingCopy.y = FloatingHelperConfig.DEFAULT_MARGIN;
-                    workingCopy.collapsedToSidebar = false;
                     FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
                 })
                 .dimensions(buttonLeft, buttonY, buttonWidth, 20)
@@ -73,7 +73,9 @@ public class FloatingHelperLayoutScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0x88000000);
 
-        FloatingIconWidget.render(context, workingCopy.x, workingCopy.y, workingCopy.width, workingCopy.height, workingCopy.mirrored, workingCopy.collapsedToSidebar);
+        boolean effectiveMirrored = workingCopy.mirrored ^ shouldAutoMirror();
+        FloatingIconWidget.render(context, workingCopy.x, workingCopy.y, workingCopy.width, workingCopy.height, effectiveMirrored);
+        FloatingHelperTitleDialog.render(context, textRenderer, workingCopy, width, height);
         drawBorder(context, workingCopy.x - 1, workingCopy.y - 1, workingCopy.width + 2, workingCopy.height + 2, 0xFFFF4D4D);
 
         drawHandle(context, workingCopy.x, workingCopy.y, mouseX, mouseY);
@@ -82,7 +84,7 @@ public class FloatingHelperLayoutScreen extends Screen {
         drawHandle(context, workingCopy.x + workingCopy.width, workingCopy.y + workingCopy.height, mouseX, mouseY);
 
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal("拖拽图案移动，拖拽红色角点缩放，可切换镜像"), width / 2, 32, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer, Text.literal("这里只编辑 yc_ui。对话框会自动跟随人物位置、大小，并在右侧时翻转底图。"), width / 2, 32, 0xE0E0E0);
         super.render(context, mouseX, mouseY, deltaTicks);
     }
 
@@ -235,6 +237,11 @@ public class FloatingHelperLayoutScreen extends Screen {
 
     private Text mirrorButtonText() {
         return Text.literal(workingCopy.mirrored ? "镜像：开" : "镜像：关");
+    }
+
+    private boolean shouldAutoMirror() {
+        int centerX = workingCopy.x + workingCopy.width / 2;
+        return centerX > width / 2;
     }
 
     private enum DragMode {

@@ -21,7 +21,7 @@ public class FloatingHelperConfigScreen extends Screen {
         FloatingHelperConfig config = FloatingHelperConfigManager.get();
         int panelWidth = 300;
         int left = (width - panelWidth) / 2;
-        int top = height / 2 - 36;
+        int top = height / 2 - 52;
 
         clearChildren();
 
@@ -39,7 +39,7 @@ public class FloatingHelperConfigScreen extends Screen {
                 .build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("完成"), button -> close())
-                .dimensions(left, top + 68, panelWidth, 20)
+                .dimensions(left, top + 60, panelWidth, 20)
                 .build());
     }
 
@@ -48,7 +48,7 @@ public class FloatingHelperConfigScreen extends Screen {
         context.fill(0, 0, width, height, 0x88000000);
 
         int panelWidth = 300;
-        int panelHeight = 120;
+        int panelHeight = 112;
         int left = (width - panelWidth) / 2;
         int top = height / 2 - 56;
 
@@ -56,7 +56,8 @@ public class FloatingHelperConfigScreen extends Screen {
         context.fill(left - 8, top - 8, left + panelWidth + 8, top + panelHeight + 8, 0xAA000000);
         drawBorder(context, left - 8, top - 8, panelWidth + 16, panelHeight + 16, 0xFF6B6B6B);
         context.drawTextWithShadow(textRenderer, Text.literal("Mod Menu 配置"), left, top - 18, 0xE0E0E0);
-        context.drawTextWithShadow(textRenderer, Text.literal("悬浮图标会在主界面和游戏内显示。"), left, top + 2, 0xC8C8C8);
+        context.drawTextWithShadow(textRenderer, Text.literal("悬浮人物会在主界面和游戏内显示。"), left, top + 2, 0xC8C8C8);
+        context.drawTextWithShadow(textRenderer, Text.literal("主界面对话框会跟随 yc_ui 的位置、大小和左右朝向。"), left, top + 14, 0xC8C8C8);
 
         super.render(context, mouseX, mouseY, deltaTicks);
     }
@@ -88,7 +89,6 @@ public class FloatingHelperConfigScreen extends Screen {
         copy.relativeX = source.relativeX;
         copy.relativeY = source.relativeY;
         copy.mirrored = source.mirrored;
-        copy.collapsedToSidebar = source.collapsedToSidebar;
         return copy;
     }
 }

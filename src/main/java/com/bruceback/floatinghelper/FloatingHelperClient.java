@@ -2,6 +2,7 @@ package com.bruceback.floatinghelper;
 
 import com.bruceback.floatinghelper.config.FloatingHelperConfig;
 import com.bruceback.floatinghelper.config.FloatingHelperConfigManager;
+import com.bruceback.floatinghelper.dialog.FloatingHelperTitleDialog;
 import com.bruceback.floatinghelper.renderer.FloatingIconWidget;
 import com.bruceback.floatinghelper.screen.FloatingHelperConfigScreen;
 import net.fabricmc.api.ClientModInitializer;
@@ -9,9 +10,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -21,8 +22,7 @@ import org.lwjgl.glfw.GLFW;
 public class FloatingHelperClient implements ClientModInitializer {
     private static final KeyBinding.Category KEY_CATEGORY = KeyBinding.Category.create(Identifier.of("floatinghelper", "controls"));
 
-    private KeyBinding retractKey;
-    private KeyBinding snapSidebarKey;
+    private KeyBinding toggleVisibilityKey;
     private KeyBinding openConfigKey;
 
     @Override
@@ -35,17 +35,10 @@ public class FloatingHelperClient implements ClientModInitializer {
     }
 
     private void registerKeyBindings() {
-        retractKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.floatinghelper.retract",
+        toggleVisibilityKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.floatinghelper.toggle_visibility",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_X,
-                KEY_CATEGORY
-        ));
-
-        snapSidebarKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.floatinghelper.snap_sidebar",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_C,
                 KEY_CATEGORY
         ));
 
@@ -60,8 +53,23 @@ public class FloatingHelperClient implements ClientModInitializer {
     private void registerRenderers() {
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             if (screen instanceof TitleScreen) {
+                FloatingHelperTitleDialog.resetForTitleScreen();
+
                 ScreenEvents.afterRender(screen).register((currentScreen, drawContext, mouseX, mouseY, tickDelta) -> {
                     renderFloatingIcon(drawContext, currentScreen.width, currentScreen.height);
+
+                    if (FloatingHelperConfigManager.get().showOnTitleScreen) {
+                        FloatingHelperTitleDialog.render(drawContext, client.textRenderer, currentScreen.width, currentScreen.height);
+                    }
+                });
+
+                ScreenMouseEvents.afterMouseClick(screen).register((currentScreen, click, doubleClick) -> {
+                    if (FloatingHelperConfigManager.get().showOnTitleScreen
+                            && FloatingHelperTitleDialog.isInsideDialog(click.x(), click.y(), currentScreen.width, currentScreen.height)) {
+                        FloatingHelperTitleDialog.advanceMessage();
+                    }
+
+                    return true;
                 });
             }
         });
@@ -79,12 +87,8 @@ public class FloatingHelperClient implements ClientModInitializer {
 
     private void registerKeyHandlers() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (retractKey.wasPressed()) {
-                toggleSidebar(client);
-            }
-
-            while (snapSidebarKey.wasPressed()) {
-                snapToNearestSidebar(client);
+            while (toggleVisibilityKey.wasPressed()) {
+                toggleFloatingHelperVisibility();
             }
 
             while (openConfigKey.wasPressed()) {
@@ -93,20 +97,9 @@ public class FloatingHelperClient implements ClientModInitializer {
         });
     }
 
-    private static void toggleSidebar(MinecraftClient client) {
+    private static void toggleFloatingHelperVisibility() {
         FloatingHelperConfig config = FloatingHelperConfigManager.get();
-        ScreenSize size = getScreenSize(client);
-        FloatingHelperConfigManager.ensureValidBounds(config, size.width(), size.height());
-        config.collapsedToSidebar = !config.collapsedToSidebar;
-        FloatingHelperConfigManager.update(config);
-    }
-
-    private static void snapToNearestSidebar(MinecraftClient client) {
-        FloatingHelperConfig config = FloatingHelperConfigManager.get();
-        ScreenSize size = getScreenSize(client);
-        FloatingHelperConfigManager.ensureValidBounds(config, size.width(), size.height());
-        config.collapsedToSidebar = true;
-        FloatingHelperConfigManager.snapToNearestSide(config, size.width(), size.height());
+        config.showOnTitleScreen = !config.showOnTitleScreen;
         FloatingHelperConfigManager.update(config);
     }
 
@@ -118,14 +111,6 @@ public class FloatingHelperClient implements ClientModInitializer {
         client.setScreen(new FloatingHelperConfigScreen(client.currentScreen));
     }
 
-    private static ScreenSize getScreenSize(MinecraftClient client) {
-        if (client.currentScreen != null) {
-            return new ScreenSize(client.currentScreen.width, client.currentScreen.height);
-        }
-
-        return new ScreenSize(client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight());
-    }
-
     private static void renderFloatingIcon(DrawContext drawContext, int screenWidth, int screenHeight) {
         FloatingHelperConfig config = FloatingHelperConfigManager.get();
 
@@ -134,17 +119,12 @@ public class FloatingHelperClient implements ClientModInitializer {
         }
 
         FloatingHelperConfigManager.ensureValidBounds(screenWidth, screenHeight);
-        FloatingIconWidget.render(
-                drawContext,
-                config.x,
-                config.y,
-                config.width,
-                config.height,
-                config.mirrored,
-                config.collapsedToSidebar
-        );
+        boolean effectiveMirrored = config.mirrored ^ shouldAutoMirror(config, screenWidth);
+        FloatingIconWidget.render(drawContext, config.x, config.y, config.width, config.height, effectiveMirrored);
     }
 
-    private record ScreenSize(int width, int height) {
+    private static boolean shouldAutoMirror(FloatingHelperConfig config, int screenWidth) {
+        int centerX = config.x + config.width / 2;
+        return centerX > screenWidth / 2;
     }
 }

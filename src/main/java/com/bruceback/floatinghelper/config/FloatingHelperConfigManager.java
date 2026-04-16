@@ -111,14 +111,6 @@ public final class FloatingHelperConfigManager {
         target.y = maxY == 0 ? 0 : (int) Math.round(target.relativeY * maxY);
     }
 
-    public static void snapToNearestSide(FloatingHelperConfig target, int screenWidth, int screenHeight) {
-        ensureValidBounds(target, screenWidth, screenHeight);
-        int maxX = Math.max(0, screenWidth - target.width);
-        int centerX = target.x + target.width / 2;
-        target.x = centerX < screenWidth / 2 ? 0 : maxX;
-        updateRelativePosition(target, screenWidth, screenHeight);
-    }
-
     public static Path getConfigDir() {
         return CONFIG_DIR;
     }
