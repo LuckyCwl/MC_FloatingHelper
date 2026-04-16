@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "floatinghelper",
+  "version": "${version}",
+  "name": "FloatingHelper",
+  "description": "Show the FloatingHelper icon only on the Minecraft title screen.",
+  "authors": [
+    "bruceback"
+  ],
+  "contact": {
+    "homepage": "https://github.com/bruceback/FloatingHelper",
+    "sources": "https://github.com/bruceback/FloatingHelper"
+  },
+  "license": "MIT",
+  "icon": "assets/floatinghelper/textures/gui/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.bruceback.floatinghelper.FloatingHelperClient"
+    ]
+  },
+  "mixins": [
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.10",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
