@@ -1,5 +1,5 @@
 {
-  "modmenu.descriptionTranslation.floatinghelper": "配置主界面与游戏内显示的悬浮人物，以及主界面的说话提示文字。",
+  "modmenu.descriptionTranslation.floatinghelper": "配置独立的主界面与游戏内悬浮 UI，以及主界面的说话文字。",
   "key.category.floatinghelper": "FloatingHelper",
   "key.floatinghelper.toggle_visibility": "切换悬浮界面显示",
   "key.floatinghelper.open_config": "打开 FloatingHelper 配置"

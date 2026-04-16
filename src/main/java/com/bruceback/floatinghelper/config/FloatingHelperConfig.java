@@ -7,6 +7,15 @@ public class FloatingHelperConfig {
     public static final int MIN_SIZE = 24;
 
     public boolean showOnTitleScreen = true;
+    public FloatingUiLayoutConfig titleUi = new FloatingUiLayoutConfig();
+    public FloatingUiLayoutConfig inGameUi = new FloatingUiLayoutConfig();
+
+    public int textX = -1;
+    public int textY = -1;
+    public double textRelativeX = -1.0D;
+    public double textRelativeY = -1.0D;
+
+    // Legacy single-layout fields kept for config migration.
     public int x = -1;
     public int y = DEFAULT_MARGIN;
     public int width = DEFAULT_WIDTH;
@@ -14,9 +23,4 @@ public class FloatingHelperConfig {
     public double relativeX = -1.0D;
     public double relativeY = -1.0D;
     public boolean mirrored = false;
-
-    public int textX = -1;
-    public int textY = -1;
-    public double textRelativeX = -1.0D;
-    public double textRelativeY = -1.0D;
 }

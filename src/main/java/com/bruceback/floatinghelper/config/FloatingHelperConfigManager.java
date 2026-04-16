@@ -35,6 +35,8 @@ public final class FloatingHelperConfigManager {
         } catch (IOException exception) {
             config = new FloatingHelperConfig();
         }
+
+        migrateLegacyLayout(config);
     }
 
     public static void save() {
@@ -57,11 +59,7 @@ public final class FloatingHelperConfigManager {
         save();
     }
 
-    public static void ensureValidBounds(int screenWidth, int screenHeight) {
-        ensureValidBounds(config, screenWidth, screenHeight);
-    }
-
-    public static void ensureValidBounds(FloatingHelperConfig target, int screenWidth, int screenHeight) {
+    public static void ensureValidBounds(FloatingUiLayoutConfig target, int screenWidth, int screenHeight) {
         if (target.width < FloatingHelperConfig.MIN_SIZE) {
             target.width = FloatingHelperConfig.DEFAULT_WIDTH;
         }
@@ -93,7 +91,7 @@ public final class FloatingHelperConfigManager {
         applyRelativePosition(target, screenWidth, screenHeight);
     }
 
-    public static void updateRelativePosition(FloatingHelperConfig target, int screenWidth, int screenHeight) {
+    public static void updateRelativePosition(FloatingUiLayoutConfig target, int screenWidth, int screenHeight) {
         int maxX = Math.max(0, screenWidth - target.width);
         int maxY = Math.max(0, screenHeight - target.height);
         target.x = Math.max(0, Math.min(target.x, maxX));
@@ -102,7 +100,7 @@ public final class FloatingHelperConfigManager {
         target.relativeY = maxY == 0 ? 0.0D : (double) target.y / maxY;
     }
 
-    public static void applyRelativePosition(FloatingHelperConfig target, int screenWidth, int screenHeight) {
+    public static void applyRelativePosition(FloatingUiLayoutConfig target, int screenWidth, int screenHeight) {
         int maxX = Math.max(0, screenWidth - target.width);
         int maxY = Math.max(0, screenHeight - target.height);
         target.relativeX = clampRelative(target.relativeX);
@@ -150,6 +148,50 @@ public final class FloatingHelperConfigManager {
 
     public static Path getConfigDir() {
         return CONFIG_DIR;
+    }
+
+    private static void migrateLegacyLayout(FloatingHelperConfig target) {
+        if (target.titleUi == null) {
+            target.titleUi = new FloatingUiLayoutConfig();
+        }
+
+        if (target.inGameUi == null) {
+            target.inGameUi = new FloatingUiLayoutConfig();
+        }
+
+        boolean hasLegacyLayout = target.x >= 0 || isValidRelative(target.relativeX) || isValidRelative(target.relativeY)
+                || target.width != FloatingHelperConfig.DEFAULT_WIDTH
+                || target.height != FloatingHelperConfig.DEFAULT_HEIGHT
+                || target.mirrored;
+
+        if (hasLegacyLayout) {
+            if (isUnset(target.titleUi)) {
+                copyLegacyLayout(target, target.titleUi);
+            }
+
+            if (isUnset(target.inGameUi)) {
+                copyLegacyLayout(target, target.inGameUi);
+            }
+        }
+    }
+
+    private static void copyLegacyLayout(FloatingHelperConfig source, FloatingUiLayoutConfig target) {
+        target.x = source.x;
+        target.y = source.y;
+        target.width = source.width;
+        target.height = source.height;
+        target.relativeX = source.relativeX;
+        target.relativeY = source.relativeY;
+        target.mirrored = source.mirrored;
+    }
+
+    private static boolean isUnset(FloatingUiLayoutConfig layout) {
+        return layout.x < 0
+                && !isValidRelative(layout.relativeX)
+                && !isValidRelative(layout.relativeY)
+                && layout.width == FloatingHelperConfig.DEFAULT_WIDTH
+                && layout.height == FloatingHelperConfig.DEFAULT_HEIGHT
+                && !layout.mirrored;
     }
 
     private static boolean isValidRelative(double value) {

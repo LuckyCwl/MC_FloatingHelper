@@ -2,6 +2,7 @@ package com.bruceback.floatinghelper.screen;
 
 import com.bruceback.floatinghelper.config.FloatingHelperConfig;
 import com.bruceback.floatinghelper.config.FloatingHelperConfigManager;
+import com.bruceback.floatinghelper.config.FloatingUiLayoutConfig;
 import com.bruceback.floatinghelper.dialog.FloatingHelperTitleDialog;
 import com.bruceback.floatinghelper.dialog.FloatingHelperTitleDialog.TextLayout;
 import com.bruceback.floatinghelper.renderer.FloatingIconWidget;
@@ -17,6 +18,7 @@ public class FloatingHelperLayoutScreen extends Screen {
 
     private final Screen parent;
     private final FloatingHelperConfig workingCopy;
+    private final LayoutMode layoutMode;
     private DragMode dragMode = DragMode.NONE;
     private int dragOffsetX;
     private int dragOffsetY;
@@ -24,15 +26,16 @@ public class FloatingHelperLayoutScreen extends Screen {
     private int anchorY;
     private TextLayout textLayout;
 
-    public FloatingHelperLayoutScreen(Screen parent, FloatingHelperConfig workingCopy) {
-        super(Text.literal("编辑 FloatingHelper 布局"));
+    public FloatingHelperLayoutScreen(Screen parent, FloatingHelperConfig workingCopy, LayoutMode layoutMode) {
+        super(Text.literal(layoutMode.title));
         this.parent = parent;
         this.workingCopy = workingCopy;
+        this.layoutMode = layoutMode;
     }
 
     @Override
     protected void init() {
-        FloatingHelperConfigManager.ensureValidBounds(workingCopy, width, height);
+        FloatingHelperConfigManager.ensureValidBounds(selectedLayout(), width, height);
         clampBounds();
         int buttonWidth = 72;
         int buttonGap = 8;
@@ -41,21 +44,28 @@ public class FloatingHelperLayoutScreen extends Screen {
         int buttonY = height - 28;
 
         addDrawableChild(ButtonWidget.builder(Text.literal("重置"), button -> {
-                    workingCopy.width = FloatingHelperConfig.DEFAULT_WIDTH;
-                    workingCopy.height = FloatingHelperConfig.DEFAULT_HEIGHT;
-                    workingCopy.x = width - workingCopy.width - FloatingHelperConfig.DEFAULT_MARGIN;
-                    workingCopy.y = FloatingHelperConfig.DEFAULT_MARGIN;
-                    workingCopy.textX = -1;
-                    workingCopy.textY = -1;
-                    workingCopy.textRelativeX = -1.0D;
-                    workingCopy.textRelativeY = -1.0D;
-                    FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
+                    FloatingUiLayoutConfig layout = selectedLayout();
+                    layout.width = FloatingHelperConfig.DEFAULT_WIDTH;
+                    layout.height = FloatingHelperConfig.DEFAULT_HEIGHT;
+                    layout.x = width - layout.width - FloatingHelperConfig.DEFAULT_MARGIN;
+                    layout.y = FloatingHelperConfig.DEFAULT_MARGIN;
+                    layout.relativeX = -1.0D;
+                    layout.relativeY = -1.0D;
+
+                    if (layoutMode == LayoutMode.TITLE) {
+                        workingCopy.textX = -1;
+                        workingCopy.textY = -1;
+                        workingCopy.textRelativeX = -1.0D;
+                        workingCopy.textRelativeY = -1.0D;
+                    }
+
+                    FloatingHelperConfigManager.updateRelativePosition(layout, width, height);
                 })
                 .dimensions(buttonLeft, buttonY, buttonWidth, 20)
                 .build());
 
         addDrawableChild(ButtonWidget.builder(mirrorButtonText(), button -> {
-                    workingCopy.mirrored = !workingCopy.mirrored;
+                    selectedLayout().mirrored = !selectedLayout().mirrored;
                     button.setMessage(mirrorButtonText());
                 })
                 .dimensions(buttonLeft + buttonWidth + buttonGap, buttonY, buttonWidth, 20)
@@ -63,8 +73,8 @@ public class FloatingHelperLayoutScreen extends Screen {
 
         addDrawableChild(ButtonWidget.builder(Text.literal("保存"), button -> {
                     clampBounds();
-                    FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
-                    if (textLayout != null) {
+                    FloatingHelperConfigManager.updateRelativePosition(selectedLayout(), width, height);
+                    if (layoutMode == LayoutMode.TITLE && textLayout != null) {
                         FloatingHelperConfigManager.updateTextRelativePosition(workingCopy, width, height, textLayout.textWidth(), textLayout.textHeight());
                     }
                     FloatingHelperConfigManager.update(workingCopy);
@@ -82,21 +92,26 @@ public class FloatingHelperLayoutScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0x88000000);
 
-        boolean effectiveMirrored = workingCopy.mirrored ^ shouldAutoMirror();
-        FloatingIconWidget.render(context, workingCopy.x, workingCopy.y, workingCopy.width, workingCopy.height, effectiveMirrored);
-        FloatingHelperTitleDialog.render(context, textRenderer, workingCopy, width, height);
-        textLayout = FloatingHelperTitleDialog.getLayout(textRenderer, workingCopy, width, height);
+        FloatingUiLayoutConfig layout = selectedLayout();
+        boolean effectiveMirrored = layout.mirrored ^ shouldAutoMirror(layout);
+        FloatingIconWidget.render(context, layout.x, layout.y, layout.width, layout.height, effectiveMirrored);
+        drawBorder(context, layout.x - 1, layout.y - 1, layout.width + 2, layout.height + 2, 0xFFFF4D4D);
 
-        drawBorder(context, workingCopy.x - 1, workingCopy.y - 1, workingCopy.width + 2, workingCopy.height + 2, 0xFFFF4D4D);
-        drawBorder(context, textLayout.x() - 2, textLayout.y() - 2, textLayout.textWidth() + 4, textLayout.textHeight() + 4, 0xFF64E764);
+        if (layoutMode == LayoutMode.TITLE) {
+            FloatingHelperTitleDialog.render(context, textRenderer, workingCopy, width, height);
+            textLayout = FloatingHelperTitleDialog.getLayout(textRenderer, workingCopy, width, height);
+            drawBorder(context, textLayout.x() - 2, textLayout.y() - 2, textLayout.textWidth() + 4, textLayout.textHeight() + 4, 0xFF64E764);
+        } else {
+            textLayout = null;
+        }
 
-        drawHandle(context, workingCopy.x, workingCopy.y, mouseX, mouseY);
-        drawHandle(context, workingCopy.x + workingCopy.width, workingCopy.y, mouseX, mouseY);
-        drawHandle(context, workingCopy.x, workingCopy.y + workingCopy.height, mouseX, mouseY);
-        drawHandle(context, workingCopy.x + workingCopy.width, workingCopy.y + workingCopy.height, mouseX, mouseY);
+        drawHandle(context, layout.x, layout.y, mouseX, mouseY);
+        drawHandle(context, layout.x + layout.width, layout.y, mouseX, mouseY);
+        drawHandle(context, layout.x, layout.y + layout.height, mouseX, mouseY);
+        drawHandle(context, layout.x + layout.width, layout.y + layout.height, mouseX, mouseY);
 
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal("红框拖动人物，绿框拖动提示文字。文字大小仍然跟随 yc_ui，只单独调整位置。"), width / 2, 32, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer, Text.literal(layoutMode.description), width / 2, 32, 0xE0E0E0);
         super.render(context, mouseX, mouseY, deltaTicks);
     }
 
@@ -108,23 +123,22 @@ public class FloatingHelperLayoutScreen extends Screen {
             dragMode = detectDragMode(mouseX, mouseY);
 
             if (dragMode == DragMode.MOVE) {
-                dragOffsetX = mouseX - workingCopy.x;
-                dragOffsetY = mouseY - workingCopy.y;
+                FloatingUiLayoutConfig layout = selectedLayout();
+                dragOffsetX = mouseX - layout.x;
+                dragOffsetY = mouseY - layout.y;
                 return true;
             }
 
-            if (dragMode == DragMode.MOVE_TEXT) {
-                if (textLayout == null) {
-                    textLayout = FloatingHelperTitleDialog.getLayout(textRenderer, workingCopy, width, height);
-                }
+            if (dragMode == DragMode.MOVE_TEXT && textLayout != null) {
                 dragOffsetX = mouseX - textLayout.x();
                 dragOffsetY = mouseY - textLayout.y();
                 return true;
             }
 
             if (dragMode != DragMode.NONE) {
-                anchorX = workingCopy.x + (dragMode == DragMode.RESIZE_NW || dragMode == DragMode.RESIZE_SW ? workingCopy.width : 0);
-                anchorY = workingCopy.y + (dragMode == DragMode.RESIZE_NW || dragMode == DragMode.RESIZE_NE ? workingCopy.height : 0);
+                FloatingUiLayoutConfig layout = selectedLayout();
+                anchorX = layout.x + (dragMode == DragMode.RESIZE_NW || dragMode == DragMode.RESIZE_SW ? layout.width : 0);
+                anchorY = layout.y + (dragMode == DragMode.RESIZE_NW || dragMode == DragMode.RESIZE_NE ? layout.height : 0);
                 return true;
             }
         }
@@ -142,16 +156,14 @@ public class FloatingHelperLayoutScreen extends Screen {
         int mouseY = (int) click.y();
 
         if (dragMode == DragMode.MOVE) {
-            workingCopy.x = mouseX - dragOffsetX;
-            workingCopy.y = mouseY - dragOffsetY;
+            FloatingUiLayoutConfig layout = selectedLayout();
+            layout.x = mouseX - dragOffsetX;
+            layout.y = mouseY - dragOffsetY;
             clampBounds();
             return true;
         }
 
-        if (dragMode == DragMode.MOVE_TEXT) {
-            if (textLayout == null) {
-                textLayout = FloatingHelperTitleDialog.getLayout(textRenderer, workingCopy, width, height);
-            }
+        if (dragMode == DragMode.MOVE_TEXT && textLayout != null) {
             workingCopy.textX = mouseX - dragOffsetX;
             workingCopy.textY = mouseY - dragOffsetY;
             int maxX = Math.max(0, width - textLayout.textWidth());
@@ -177,10 +189,11 @@ public class FloatingHelperLayoutScreen extends Screen {
     }
 
     private void resizeFromCorner(int mouseX, int mouseY) {
-        int newX = workingCopy.x;
-        int newY = workingCopy.y;
-        int newWidth = workingCopy.width;
-        int newHeight = workingCopy.height;
+        FloatingUiLayoutConfig layout = selectedLayout();
+        int newX = layout.x;
+        int newY = layout.y;
+        int newWidth = layout.width;
+        int newHeight = layout.height;
 
         switch (dragMode) {
             case RESIZE_NW -> {
@@ -212,10 +225,10 @@ public class FloatingHelperLayoutScreen extends Screen {
             }
         }
 
-        workingCopy.x = newX;
-        workingCopy.y = newY;
-        workingCopy.width = Math.max(FloatingHelperConfig.MIN_SIZE, newWidth);
-        workingCopy.height = Math.max(FloatingHelperConfig.MIN_SIZE, newHeight);
+        layout.x = newX;
+        layout.y = newY;
+        layout.width = Math.max(FloatingHelperConfig.MIN_SIZE, newWidth);
+        layout.height = Math.max(FloatingHelperConfig.MIN_SIZE, newHeight);
     }
 
     private void drawHandle(DrawContext context, int centerX, int centerY, int mouseX, int mouseY) {
@@ -234,30 +247,33 @@ public class FloatingHelperLayoutScreen extends Screen {
     }
 
     private DragMode detectDragMode(int mouseX, int mouseY) {
-        if (isOverHandle(mouseX, mouseY, workingCopy.x, workingCopy.y)) {
+        FloatingUiLayoutConfig layout = selectedLayout();
+
+        if (isOverHandle(mouseX, mouseY, layout.x, layout.y)) {
             return DragMode.RESIZE_NW;
         }
 
-        if (isOverHandle(mouseX, mouseY, workingCopy.x + workingCopy.width, workingCopy.y)) {
+        if (isOverHandle(mouseX, mouseY, layout.x + layout.width, layout.y)) {
             return DragMode.RESIZE_NE;
         }
 
-        if (isOverHandle(mouseX, mouseY, workingCopy.x, workingCopy.y + workingCopy.height)) {
+        if (isOverHandle(mouseX, mouseY, layout.x, layout.y + layout.height)) {
             return DragMode.RESIZE_SW;
         }
 
-        if (isOverHandle(mouseX, mouseY, workingCopy.x + workingCopy.width, workingCopy.y + workingCopy.height)) {
+        if (isOverHandle(mouseX, mouseY, layout.x + layout.width, layout.y + layout.height)) {
             return DragMode.RESIZE_SE;
         }
 
-        if (textLayout != null
+        if (layoutMode == LayoutMode.TITLE
+                && textLayout != null
                 && mouseX >= textLayout.x() && mouseX <= textLayout.x() + textLayout.textWidth()
                 && mouseY >= textLayout.y() && mouseY <= textLayout.y() + textLayout.textHeight()) {
             return DragMode.MOVE_TEXT;
         }
 
-        if (mouseX >= workingCopy.x && mouseX <= workingCopy.x + workingCopy.width
-                && mouseY >= workingCopy.y && mouseY <= workingCopy.y + workingCopy.height) {
+        if (mouseX >= layout.x && mouseX <= layout.x + layout.width
+                && mouseY >= layout.y && mouseY <= layout.y + layout.height) {
             return DragMode.MOVE;
         }
 
@@ -270,19 +286,37 @@ public class FloatingHelperLayoutScreen extends Screen {
     }
 
     private void clampBounds() {
-        workingCopy.width = MathHelper.clamp(workingCopy.width, FloatingHelperConfig.MIN_SIZE, width);
-        workingCopy.height = MathHelper.clamp(workingCopy.height, FloatingHelperConfig.MIN_SIZE, height);
-        workingCopy.x = MathHelper.clamp(workingCopy.x, 0, Math.max(0, width - workingCopy.width));
-        workingCopy.y = MathHelper.clamp(workingCopy.y, 0, Math.max(0, height - workingCopy.height));
+        FloatingUiLayoutConfig layout = selectedLayout();
+        layout.width = MathHelper.clamp(layout.width, FloatingHelperConfig.MIN_SIZE, width);
+        layout.height = MathHelper.clamp(layout.height, FloatingHelperConfig.MIN_SIZE, height);
+        layout.x = MathHelper.clamp(layout.x, 0, Math.max(0, width - layout.width));
+        layout.y = MathHelper.clamp(layout.y, 0, Math.max(0, height - layout.height));
     }
 
     private Text mirrorButtonText() {
-        return Text.literal(workingCopy.mirrored ? "镜像：开" : "镜像：关");
+        return Text.literal(selectedLayout().mirrored ? "镜像：开" : "镜像：关");
     }
 
-    private boolean shouldAutoMirror() {
-        int centerX = workingCopy.x + workingCopy.width / 2;
+    private boolean shouldAutoMirror(FloatingUiLayoutConfig layout) {
+        int centerX = layout.x + layout.width / 2;
         return centerX > width / 2;
+    }
+
+    private FloatingUiLayoutConfig selectedLayout() {
+        return layoutMode == LayoutMode.TITLE ? workingCopy.titleUi : workingCopy.inGameUi;
+    }
+
+    public enum LayoutMode {
+        TITLE("编辑主界面 UI", "红框拖动主界面人物，绿框拖动主界面文字。"),
+        IN_GAME("编辑游戏内 UI", "这里只编辑游戏内 yc_ui，不显示主界面文字。");
+
+        private final String title;
+        private final String description;
+
+        LayoutMode(String title, String description) {
+            this.title = title;
+            this.description = description;
+        }
     }
 
     private enum DragMode {

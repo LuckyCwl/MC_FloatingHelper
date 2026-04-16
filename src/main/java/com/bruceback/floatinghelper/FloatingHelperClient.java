@@ -2,6 +2,7 @@ package com.bruceback.floatinghelper;
 
 import com.bruceback.floatinghelper.config.FloatingHelperConfig;
 import com.bruceback.floatinghelper.config.FloatingHelperConfigManager;
+import com.bruceback.floatinghelper.config.FloatingUiLayoutConfig;
 import com.bruceback.floatinghelper.dialog.FloatingHelperTitleDialog;
 import com.bruceback.floatinghelper.renderer.FloatingIconWidget;
 import com.bruceback.floatinghelper.screen.FloatingHelperConfigScreen;
@@ -56,16 +57,16 @@ public class FloatingHelperClient implements ClientModInitializer {
                 FloatingHelperTitleDialog.resetForTitleScreen();
 
                 ScreenEvents.afterRender(screen).register((currentScreen, drawContext, mouseX, mouseY, tickDelta) -> {
-                    renderFloatingIcon(drawContext, currentScreen.width, currentScreen.height);
+                    renderTitleUi(drawContext, currentScreen.width, currentScreen.height);
 
                     if (FloatingHelperConfigManager.get().showOnTitleScreen) {
-                        FloatingHelperTitleDialog.render(drawContext, client.textRenderer, currentScreen.width, currentScreen.height);
+                        FloatingHelperTitleDialog.render(drawContext, client.textRenderer, FloatingHelperConfigManager.get(), currentScreen.width, currentScreen.height);
                     }
                 });
 
                 ScreenMouseEvents.afterMouseClick(screen).register((currentScreen, click, doubleClick) -> {
                     if (FloatingHelperConfigManager.get().showOnTitleScreen
-                            && isInsideFloatingIcon(click.x(), click.y(), currentScreen.width, currentScreen.height)) {
+                            && isInsideFloatingIcon(click.x(), click.y(), currentScreen.width, currentScreen.height, FloatingHelperConfigManager.get().titleUi)) {
                         FloatingHelperTitleDialog.advanceMessage();
                     }
 
@@ -81,7 +82,7 @@ public class FloatingHelperClient implements ClientModInitializer {
                 return;
             }
 
-            renderFloatingIcon(drawContext, client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight());
+            renderInGameUi(drawContext, client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight());
         });
     }
 
@@ -111,29 +112,42 @@ public class FloatingHelperClient implements ClientModInitializer {
         client.setScreen(new FloatingHelperConfigScreen(client.currentScreen));
     }
 
-    private static void renderFloatingIcon(DrawContext drawContext, int screenWidth, int screenHeight) {
+    private static void renderTitleUi(DrawContext drawContext, int screenWidth, int screenHeight) {
         FloatingHelperConfig config = FloatingHelperConfigManager.get();
 
         if (!config.showOnTitleScreen) {
             return;
         }
 
-        FloatingHelperConfigManager.ensureValidBounds(screenWidth, screenHeight);
-        boolean effectiveMirrored = config.mirrored ^ shouldAutoMirror(config, screenWidth);
-        FloatingIconWidget.render(drawContext, config.x, config.y, config.width, config.height, effectiveMirrored);
+        renderLayout(drawContext, config.titleUi, screenWidth, screenHeight);
     }
 
-    private static boolean shouldAutoMirror(FloatingHelperConfig config, int screenWidth) {
-        int centerX = config.x + config.width / 2;
+    private static void renderInGameUi(DrawContext drawContext, int screenWidth, int screenHeight) {
+        FloatingHelperConfig config = FloatingHelperConfigManager.get();
+
+        if (!config.showOnTitleScreen) {
+            return;
+        }
+
+        renderLayout(drawContext, config.inGameUi, screenWidth, screenHeight);
+    }
+
+    private static void renderLayout(DrawContext drawContext, FloatingUiLayoutConfig layout, int screenWidth, int screenHeight) {
+        FloatingHelperConfigManager.ensureValidBounds(layout, screenWidth, screenHeight);
+        boolean effectiveMirrored = layout.mirrored ^ shouldAutoMirror(layout, screenWidth);
+        FloatingIconWidget.render(drawContext, layout.x, layout.y, layout.width, layout.height, effectiveMirrored);
+    }
+
+    private static boolean shouldAutoMirror(FloatingUiLayoutConfig layout, int screenWidth) {
+        int centerX = layout.x + layout.width / 2;
         return centerX > screenWidth / 2;
     }
 
-    private static boolean isInsideFloatingIcon(double mouseX, double mouseY, int screenWidth, int screenHeight) {
-        FloatingHelperConfig config = FloatingHelperConfigManager.get();
-        FloatingHelperConfigManager.ensureValidBounds(screenWidth, screenHeight);
-        return mouseX >= config.x
-                && mouseX <= config.x + config.width
-                && mouseY >= config.y
-                && mouseY <= config.y + config.height;
+    private static boolean isInsideFloatingIcon(double mouseX, double mouseY, int screenWidth, int screenHeight, FloatingUiLayoutConfig layout) {
+        FloatingHelperConfigManager.ensureValidBounds(layout, screenWidth, screenHeight);
+        return mouseX >= layout.x
+                && mouseX <= layout.x + layout.width
+                && mouseY >= layout.y
+                && mouseY <= layout.y + layout.height;
     }
 }
