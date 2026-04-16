@@ -84,7 +84,7 @@ public class FloatingHelperLayoutScreen extends Screen {
         drawHandle(context, workingCopy.x + workingCopy.width, workingCopy.y + workingCopy.height, mouseX, mouseY);
 
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal("这里只编辑 yc_ui。对话框会自动跟随人物位置、大小，并在右侧时翻转底图。"), width / 2, 32, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer, Text.literal("这里只编辑 yc_ui。绿色提示文字会自动跟随人物位置与大小，并尽量避开人物本体。"), width / 2, 32, 0xE0E0E0);
         super.render(context, mouseX, mouseY, deltaTicks);
     }
 
