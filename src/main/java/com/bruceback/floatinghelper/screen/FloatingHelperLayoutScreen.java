@@ -29,7 +29,7 @@ public class FloatingHelperLayoutScreen extends Screen {
 
     @Override
     protected void init() {
-        FloatingHelperConfigManager.ensureValidBounds(width, height);
+        FloatingHelperConfigManager.ensureValidBounds(workingCopy, width, height);
         clampBounds();
 
         addDrawableChild(ButtonWidget.builder(Text.literal("重置"), button -> {
@@ -37,12 +37,14 @@ public class FloatingHelperLayoutScreen extends Screen {
                     workingCopy.height = FloatingHelperConfig.DEFAULT_HEIGHT;
                     workingCopy.x = width - workingCopy.width - FloatingHelperConfig.DEFAULT_MARGIN;
                     workingCopy.y = FloatingHelperConfig.DEFAULT_MARGIN;
+                    FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
                 })
                 .dimensions(width / 2 - 154, height - 28, 100, 20)
                 .build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("保存"), button -> {
                     clampBounds();
+                    FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
                     FloatingHelperConfigManager.update(workingCopy);
                     client.setScreen(parent);
                 })

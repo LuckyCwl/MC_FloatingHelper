@@ -1,15 +1,15 @@
 # FloatingHelper
 
-FloatingHelper is a Fabric mod for Minecraft `1.21.10`.
+FloatingHelper 是一个适用于 Minecraft `1.21.10` 的 Fabric 模组。
 
-## Features
+## 功能特性
 
-- Shows a floating icon on the title screen
-- Lets you toggle the icon on or off from Mod Menu
-- Lets you open a layout editor to move and resize the icon
-- Keeps the icon off the in-game HUD
+- 在标题界面和游戏内显示一个悬浮图标
+- 可在 Mod Menu 中切换图标显示或隐藏
+- 可打开布局编辑界面，拖拽并缩放图标
+- 图标位置会随界面尺寸变化按相对位置保持
 
-## Environment
+## 环境信息
 
 ```properties
 minecraft_version=1.21.10
@@ -20,17 +20,17 @@ gradle=9.2.1
 java=21
 ```
 
-## Build
+## 构建
 
 ```powershell
 .\gradlew.bat build
 ```
 
-Build output is generated in `build/libs/`.
+构建产物会生成在 `build/libs/` 目录中。
 
-## Mod Menu
+## Mod Menu 配置
 
-After installing `Mod Menu`, open the `FloatingHelper` config page to access:
+安装 `Mod Menu` 后，可以在 `FloatingHelper` 的配置页中使用以下功能：
 
-- `Show / Hide`: toggles whether the floating icon is visible on the title screen
-- `Edit Position & Size`: opens the layout editor so you can drag the icon and resize it from the corners
+- `显示 / 隐藏`：切换悬浮图标在主界面和游戏内的显示状态
+- `编辑位置与大小`：打开布局编辑界面，可拖动图标位置并通过角点缩放尺寸

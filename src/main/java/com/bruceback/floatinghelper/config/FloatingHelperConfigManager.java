@@ -58,27 +58,72 @@ public final class FloatingHelperConfigManager {
     }
 
     public static void ensureValidBounds(int screenWidth, int screenHeight) {
-        if (config.width < FloatingHelperConfig.MIN_SIZE) {
-            config.width = FloatingHelperConfig.DEFAULT_WIDTH;
+        ensureValidBounds(config, screenWidth, screenHeight);
+    }
+
+    public static void ensureValidBounds(FloatingHelperConfig target, int screenWidth, int screenHeight) {
+        if (target.width < FloatingHelperConfig.MIN_SIZE) {
+            target.width = FloatingHelperConfig.DEFAULT_WIDTH;
         }
 
-        if (config.height < FloatingHelperConfig.MIN_SIZE) {
-            config.height = FloatingHelperConfig.DEFAULT_HEIGHT;
+        if (target.height < FloatingHelperConfig.MIN_SIZE) {
+            target.height = FloatingHelperConfig.DEFAULT_HEIGHT;
         }
 
-        if (config.x < 0) {
-            config.x = screenWidth - config.width - FloatingHelperConfig.DEFAULT_MARGIN;
+        target.width = Math.min(target.width, Math.max(FloatingHelperConfig.MIN_SIZE, screenWidth));
+        target.height = Math.min(target.height, Math.max(FloatingHelperConfig.MIN_SIZE, screenHeight));
+
+        int maxX = Math.max(0, screenWidth - target.width);
+        int maxY = Math.max(0, screenHeight - target.height);
+
+        if (!isValidRelative(target.relativeX) || !isValidRelative(target.relativeY)) {
+            if (target.x < 0) {
+                target.x = Math.max(0, screenWidth - target.width - FloatingHelperConfig.DEFAULT_MARGIN);
+            }
+
+            if (target.y < 0) {
+                target.y = Math.max(0, screenHeight - target.height - FloatingHelperConfig.DEFAULT_MARGIN);
+            }
+
+            target.x = Math.max(0, Math.min(target.x, maxX));
+            target.y = Math.max(0, Math.min(target.y, maxY));
+            updateRelativePosition(target, screenWidth, screenHeight);
         }
 
-        if (config.y < 0) {
-            config.y = FloatingHelperConfig.DEFAULT_MARGIN;
-        }
+        applyRelativePosition(target, screenWidth, screenHeight);
+    }
 
-        config.x = Math.max(0, Math.min(config.x, Math.max(0, screenWidth - config.width)));
-        config.y = Math.max(0, Math.min(config.y, Math.max(0, screenHeight - config.height)));
+    public static void updateRelativePosition(FloatingHelperConfig target, int screenWidth, int screenHeight) {
+        int maxX = Math.max(0, screenWidth - target.width);
+        int maxY = Math.max(0, screenHeight - target.height);
+        target.x = Math.max(0, Math.min(target.x, maxX));
+        target.y = Math.max(0, Math.min(target.y, maxY));
+        target.relativeX = maxX == 0 ? 0.0D : (double) target.x / maxX;
+        target.relativeY = maxY == 0 ? 0.0D : (double) target.y / maxY;
+    }
+
+    public static void applyRelativePosition(FloatingHelperConfig target, int screenWidth, int screenHeight) {
+        int maxX = Math.max(0, screenWidth - target.width);
+        int maxY = Math.max(0, screenHeight - target.height);
+        target.relativeX = clampRelative(target.relativeX);
+        target.relativeY = clampRelative(target.relativeY);
+        target.x = maxX == 0 ? 0 : (int) Math.round(target.relativeX * maxX);
+        target.y = maxY == 0 ? 0 : (int) Math.round(target.relativeY * maxY);
     }
 
     public static Path getConfigDir() {
         return CONFIG_DIR;
+    }
+
+    private static boolean isValidRelative(double value) {
+        return !Double.isNaN(value) && !Double.isInfinite(value) && value >= 0.0D && value <= 1.0D;
+    }
+
+    private static double clampRelative(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0D;
+        }
+
+        return Math.max(0.0D, Math.min(value, 1.0D));
     }
 }

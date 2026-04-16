@@ -11,5 +11,6 @@ public class FloatingHelperConfig {
     public int y = DEFAULT_MARGIN;
     public int width = DEFAULT_WIDTH;
     public int height = DEFAULT_HEIGHT;
-    public String customImagePath = "";
+    public double relativeX = -1.0D;
+    public double relativeY = -1.0D;
 }
