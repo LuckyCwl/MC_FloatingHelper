@@ -17,10 +17,16 @@
   "entrypoints": {
     "client": [
       "com.bruceback.floatinghelper.FloatingHelperClient"
+    ],
+    "modmenu": [
+      "com.bruceback.floatinghelper.integration.FloatingHelperModMenu"
     ]
   },
   "mixins": [
   ],
+  "suggests": {
+    "modmenu": "*"
+  },
   "depends": {
     "fabricloader": ">=0.18.4",
     "minecraft": "~1.21.10",

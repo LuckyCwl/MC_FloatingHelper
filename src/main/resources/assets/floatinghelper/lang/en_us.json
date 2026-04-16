@@ -1,4 +1,3 @@
 {
-  "key.floatinghelper.toggle": "Toggle Floating Helper",
-  "category.floatinghelper": "Floating Helper"
+  "modmenu.descriptionTranslation.floatinghelper": "Configure the title-screen floating icon."
 }
