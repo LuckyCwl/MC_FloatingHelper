@@ -57,7 +57,7 @@ public class FloatingHelperConfigScreen extends Screen {
         drawBorder(context, left - 8, top - 8, panelWidth + 16, panelHeight + 16, 0xFF6B6B6B);
         context.drawTextWithShadow(textRenderer, Text.literal("Mod Menu 配置"), left, top - 18, 0xE0E0E0);
         context.drawTextWithShadow(textRenderer, Text.literal("悬浮人物会在主界面和游戏内显示。"), left, top + 2, 0xC8C8C8);
-        context.drawTextWithShadow(textRenderer, Text.literal("主界面的绿色提示文字会跟随 yc_ui 的位置、大小和朝向。"), left, top + 14, 0xC8C8C8);
+        context.drawTextWithShadow(textRenderer, Text.literal("绿色提示文字默认跟随 yc_ui，但现在也可以在编辑页里单独拖动位置。"), left, top + 14, 0xC8C8C8);
 
         super.render(context, mouseX, mouseY, deltaTicks);
     }
@@ -89,6 +89,10 @@ public class FloatingHelperConfigScreen extends Screen {
         copy.relativeX = source.relativeX;
         copy.relativeY = source.relativeY;
         copy.mirrored = source.mirrored;
+        copy.textX = source.textX;
+        copy.textY = source.textY;
+        copy.textRelativeX = source.textRelativeX;
+        copy.textRelativeY = source.textRelativeY;
         return copy;
     }
 }

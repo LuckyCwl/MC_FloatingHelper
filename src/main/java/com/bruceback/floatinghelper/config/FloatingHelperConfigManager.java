@@ -111,6 +111,43 @@ public final class FloatingHelperConfigManager {
         target.y = maxY == 0 ? 0 : (int) Math.round(target.relativeY * maxY);
     }
 
+    public static void updateTextRelativePosition(FloatingHelperConfig target, int screenWidth, int screenHeight, int textWidth, int textHeight) {
+        int maxX = Math.max(0, screenWidth - textWidth);
+        int maxY = Math.max(0, screenHeight - textHeight);
+        target.textX = Math.max(0, Math.min(target.textX, maxX));
+        target.textY = Math.max(0, Math.min(target.textY, maxY));
+        target.textRelativeX = maxX == 0 ? 0.0D : (double) target.textX / maxX;
+        target.textRelativeY = maxY == 0 ? 0.0D : (double) target.textY / maxY;
+    }
+
+    public static int resolveTextX(FloatingHelperConfig target, int screenWidth, int textWidth, int defaultX) {
+        int maxX = Math.max(0, screenWidth - textWidth);
+        if (!isValidRelative(target.textRelativeX)) {
+            if (target.textX < 0) {
+                target.textX = Math.max(0, Math.min(defaultX, maxX));
+            }
+            target.textX = Math.max(0, Math.min(target.textX, maxX));
+            return target.textX;
+        }
+
+        target.textRelativeX = clampRelative(target.textRelativeX);
+        return maxX == 0 ? 0 : (int) Math.round(target.textRelativeX * maxX);
+    }
+
+    public static int resolveTextY(FloatingHelperConfig target, int screenHeight, int textHeight, int defaultY) {
+        int maxY = Math.max(0, screenHeight - textHeight);
+        if (!isValidRelative(target.textRelativeY)) {
+            if (target.textY < 0) {
+                target.textY = Math.max(0, Math.min(defaultY, maxY));
+            }
+            target.textY = Math.max(0, Math.min(target.textY, maxY));
+            return target.textY;
+        }
+
+        target.textRelativeY = clampRelative(target.textRelativeY);
+        return maxY == 0 ? 0 : (int) Math.round(target.textRelativeY * maxY);
+    }
+
     public static Path getConfigDir() {
         return CONFIG_DIR;
     }

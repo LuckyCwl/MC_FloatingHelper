@@ -3,6 +3,7 @@ package com.bruceback.floatinghelper.screen;
 import com.bruceback.floatinghelper.config.FloatingHelperConfig;
 import com.bruceback.floatinghelper.config.FloatingHelperConfigManager;
 import com.bruceback.floatinghelper.dialog.FloatingHelperTitleDialog;
+import com.bruceback.floatinghelper.dialog.FloatingHelperTitleDialog.TextLayout;
 import com.bruceback.floatinghelper.renderer.FloatingIconWidget;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -21,6 +22,7 @@ public class FloatingHelperLayoutScreen extends Screen {
     private int dragOffsetY;
     private int anchorX;
     private int anchorY;
+    private TextLayout textLayout;
 
     public FloatingHelperLayoutScreen(Screen parent, FloatingHelperConfig workingCopy) {
         super(Text.literal("编辑 FloatingHelper 布局"));
@@ -43,6 +45,10 @@ public class FloatingHelperLayoutScreen extends Screen {
                     workingCopy.height = FloatingHelperConfig.DEFAULT_HEIGHT;
                     workingCopy.x = width - workingCopy.width - FloatingHelperConfig.DEFAULT_MARGIN;
                     workingCopy.y = FloatingHelperConfig.DEFAULT_MARGIN;
+                    workingCopy.textX = -1;
+                    workingCopy.textY = -1;
+                    workingCopy.textRelativeX = -1.0D;
+                    workingCopy.textRelativeY = -1.0D;
                     FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
                 })
                 .dimensions(buttonLeft, buttonY, buttonWidth, 20)
@@ -58,6 +64,9 @@ public class FloatingHelperLayoutScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.literal("保存"), button -> {
                     clampBounds();
                     FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
+                    if (textLayout != null) {
+                        FloatingHelperConfigManager.updateTextRelativePosition(workingCopy, width, height, textLayout.textWidth(), textLayout.textHeight());
+                    }
                     FloatingHelperConfigManager.update(workingCopy);
                     client.setScreen(parent);
                 })
@@ -76,7 +85,10 @@ public class FloatingHelperLayoutScreen extends Screen {
         boolean effectiveMirrored = workingCopy.mirrored ^ shouldAutoMirror();
         FloatingIconWidget.render(context, workingCopy.x, workingCopy.y, workingCopy.width, workingCopy.height, effectiveMirrored);
         FloatingHelperTitleDialog.render(context, textRenderer, workingCopy, width, height);
+        textLayout = FloatingHelperTitleDialog.getLayout(textRenderer, workingCopy, width, height);
+
         drawBorder(context, workingCopy.x - 1, workingCopy.y - 1, workingCopy.width + 2, workingCopy.height + 2, 0xFFFF4D4D);
+        drawBorder(context, textLayout.x() - 2, textLayout.y() - 2, textLayout.textWidth() + 4, textLayout.textHeight() + 4, 0xFF64E764);
 
         drawHandle(context, workingCopy.x, workingCopy.y, mouseX, mouseY);
         drawHandle(context, workingCopy.x + workingCopy.width, workingCopy.y, mouseX, mouseY);
@@ -84,7 +96,7 @@ public class FloatingHelperLayoutScreen extends Screen {
         drawHandle(context, workingCopy.x + workingCopy.width, workingCopy.y + workingCopy.height, mouseX, mouseY);
 
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal("这里只编辑 yc_ui。绿色提示文字会自动跟随人物位置与大小，并尽量避开人物本体。"), width / 2, 32, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer, Text.literal("红框拖动人物，绿框拖动提示文字。文字大小仍然跟随 yc_ui，只单独调整位置。"), width / 2, 32, 0xE0E0E0);
         super.render(context, mouseX, mouseY, deltaTicks);
     }
 
@@ -98,6 +110,15 @@ public class FloatingHelperLayoutScreen extends Screen {
             if (dragMode == DragMode.MOVE) {
                 dragOffsetX = mouseX - workingCopy.x;
                 dragOffsetY = mouseY - workingCopy.y;
+                return true;
+            }
+
+            if (dragMode == DragMode.MOVE_TEXT) {
+                if (textLayout == null) {
+                    textLayout = FloatingHelperTitleDialog.getLayout(textRenderer, workingCopy, width, height);
+                }
+                dragOffsetX = mouseX - textLayout.x();
+                dragOffsetY = mouseY - textLayout.y();
                 return true;
             }
 
@@ -124,6 +145,20 @@ public class FloatingHelperLayoutScreen extends Screen {
             workingCopy.x = mouseX - dragOffsetX;
             workingCopy.y = mouseY - dragOffsetY;
             clampBounds();
+            return true;
+        }
+
+        if (dragMode == DragMode.MOVE_TEXT) {
+            if (textLayout == null) {
+                textLayout = FloatingHelperTitleDialog.getLayout(textRenderer, workingCopy, width, height);
+            }
+            workingCopy.textX = mouseX - dragOffsetX;
+            workingCopy.textY = mouseY - dragOffsetY;
+            int maxX = Math.max(0, width - textLayout.textWidth());
+            int maxY = Math.max(0, height - textLayout.textHeight());
+            workingCopy.textX = MathHelper.clamp(workingCopy.textX, 0, maxX);
+            workingCopy.textY = MathHelper.clamp(workingCopy.textY, 0, maxY);
+            FloatingHelperConfigManager.updateTextRelativePosition(workingCopy, width, height, textLayout.textWidth(), textLayout.textHeight());
             return true;
         }
 
@@ -215,6 +250,12 @@ public class FloatingHelperLayoutScreen extends Screen {
             return DragMode.RESIZE_SE;
         }
 
+        if (textLayout != null
+                && mouseX >= textLayout.x() && mouseX <= textLayout.x() + textLayout.textWidth()
+                && mouseY >= textLayout.y() && mouseY <= textLayout.y() + textLayout.textHeight()) {
+            return DragMode.MOVE_TEXT;
+        }
+
         if (mouseX >= workingCopy.x && mouseX <= workingCopy.x + workingCopy.width
                 && mouseY >= workingCopy.y && mouseY <= workingCopy.y + workingCopy.height) {
             return DragMode.MOVE;
@@ -247,6 +288,7 @@ public class FloatingHelperLayoutScreen extends Screen {
     private enum DragMode {
         NONE,
         MOVE,
+        MOVE_TEXT,
         RESIZE_NW,
         RESIZE_NE,
         RESIZE_SW,

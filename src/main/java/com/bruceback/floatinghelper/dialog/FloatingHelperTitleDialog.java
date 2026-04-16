@@ -27,12 +27,12 @@ public final class FloatingHelperTitleDialog {
             "许久未见。最近很忙吗？",
             "杨桃，我更爱你。"
     );
+    private static final Style TEXT_STYLE = Style.EMPTY.withBold(true).withFormatting(Formatting.GREEN);
     private static final Random RANDOM = new Random();
     private static final List<String> remainingMessages = new ArrayList<>();
-    private static final Style TEXT_STYLE = Style.EMPTY.withBold(true).withFormatting(Formatting.GREEN);
-    private static final long FADE_DURATION_MS = 1000L;
-    private static final int MAX_LINES = 2;
     private static final int SCREEN_MARGIN = 6;
+    private static final long FADE_DURATION_MS = 1000L;
+    private static final int MAX_LINES = 4;
 
     private static String currentMessage = MESSAGES.getFirst();
     private static long messageShownAt = Util.getMeasuringTimeMs();
@@ -60,7 +60,7 @@ public final class FloatingHelperTitleDialog {
     }
 
     public static void render(DrawContext context, TextRenderer textRenderer, FloatingHelperConfig config, int screenWidth, int screenHeight) {
-        TextLayout layout = buildLayout(textRenderer, config, screenWidth, screenHeight);
+        TextLayout layout = getLayout(textRenderer, config, screenWidth, screenHeight);
         float fadeProgress = MathHelper.clamp((float) (Util.getMeasuringTimeMs() - messageShownAt) / FADE_DURATION_MS, 0.0F, 1.0F);
         int alpha = Math.max(20, Math.round(255.0F * fadeProgress));
         int color = (alpha << 24) | 0x57D65A;
@@ -76,16 +76,16 @@ public final class FloatingHelperTitleDialog {
             OrderedText line = layout.lines().get(i);
             int lineWidth = textRenderer.getWidth(line);
             int lineX = Math.max(0, (layout.textWidth() - lineWidth) / 2);
-            context.drawTextWithShadow(textRenderer, line, lineX, i * lineHeight, color);
+            context.drawText(textRenderer, line, lineX, i * lineHeight, color, false);
         }
 
         matrices.popMatrix();
     }
 
-    private static TextLayout buildLayout(TextRenderer textRenderer, FloatingHelperConfig config, int screenWidth, int screenHeight) {
+    public static TextLayout getLayout(TextRenderer textRenderer, FloatingHelperConfig config, int screenWidth, int screenHeight) {
         IconBounds icon = resolveIconBounds(config, screenWidth, screenHeight);
         float scale = MathHelper.clamp(icon.height() / 96.0F, 0.78F, 1.45F);
-        boolean iconOnRight = icon.centerX() > screenWidth / 2;
+        int lineHeight = textRenderer.fontHeight + 2;
         List<OrderedText> lines = wrapMessageLines(textRenderer, scale, icon.width(), screenWidth);
 
         int widestLine = 0;
@@ -94,48 +94,45 @@ public final class FloatingHelperTitleDialog {
         }
 
         int textWidth = Math.max(1, Math.round(widestLine * scale));
-        int lineHeight = textRenderer.fontHeight + 2;
         int textHeight = Math.max(1, Math.round(lines.size() * lineHeight * scale));
-        int horizontalGap = Math.max(14, Math.round(icon.width() * 0.18F));
-        int verticalGap = Math.max(10, Math.round(icon.height() * 0.14F));
+        int defaultX = buildDefaultX(icon, textWidth, screenWidth);
+        int defaultY = buildDefaultY(icon, textHeight, screenHeight);
+        int x = FloatingHelperConfigManager.resolveTextX(config, screenWidth, textWidth, defaultX);
+        int y = FloatingHelperConfigManager.resolveTextY(config, screenHeight, textHeight, defaultY);
 
+        x = MathHelper.clamp(x, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenWidth - textWidth - SCREEN_MARGIN));
+        y = MathHelper.clamp(y, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenHeight - textHeight - SCREEN_MARGIN));
+        return new TextLayout(lines, scale, x, y, textWidth, textHeight);
+    }
+
+    private static int buildDefaultX(IconBounds icon, int textWidth, int screenWidth) {
+        boolean iconOnRight = icon.centerX() > screenWidth / 2;
+        int horizontalGap = Math.max(14, Math.round(icon.width() * 0.18F));
         int x = iconOnRight
                 ? icon.x() - textWidth - horizontalGap
                 : icon.x() + icon.width() + horizontalGap;
+        return MathHelper.clamp(x, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenWidth - textWidth - SCREEN_MARGIN));
+    }
+
+    private static int buildDefaultY(IconBounds icon, int textHeight, int screenHeight) {
+        int verticalGap = Math.max(10, Math.round(icon.height() * 0.14F));
         int y = icon.y() - textHeight - verticalGap;
-
-        x = MathHelper.clamp(x, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenWidth - textWidth - SCREEN_MARGIN));
-        y = MathHelper.clamp(y, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenHeight - textHeight - SCREEN_MARGIN));
-
-        if (intersects(x, y, textWidth, textHeight, icon.x(), icon.y(), icon.width(), icon.height())) {
-            y = Math.max(SCREEN_MARGIN, icon.y() - textHeight - verticalGap - Math.round(icon.height() * 0.2F));
-        }
-
-        if (intersects(x, y, textWidth, textHeight, icon.x(), icon.y(), icon.width(), icon.height())) {
-            x = iconOnRight
-                    ? Math.max(SCREEN_MARGIN, icon.x() - textWidth - horizontalGap - Math.round(icon.width() * 0.25F))
-                    : Math.min(screenWidth - textWidth - SCREEN_MARGIN, icon.x() + icon.width() + horizontalGap + Math.round(icon.width() * 0.25F));
-        }
-
-        x = MathHelper.clamp(x, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenWidth - textWidth - SCREEN_MARGIN));
-        y = MathHelper.clamp(y, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenHeight - textHeight - SCREEN_MARGIN));
-        return new TextLayout(lines, scale, x, y, textWidth);
+        return MathHelper.clamp(y, SCREEN_MARGIN, Math.max(SCREEN_MARGIN, screenHeight - textHeight - SCREEN_MARGIN));
     }
 
     private static List<OrderedText> wrapMessageLines(TextRenderer textRenderer, float scale, int iconWidth, int screenWidth) {
-        String message = currentMessage.replace("，", "，\n");
-        int maxLineWidth = Math.max(92, Math.min(Math.round(iconWidth * 3.0F), Math.round(screenWidth * 0.38F)));
+        String message = currentMessage
+                .replace("，", "，\n")
+                .replace("？", "？\n");
+
+        int maxLineWidth = Math.max(92, Math.min(Math.round(iconWidth * 3.0F), Math.round(screenWidth * 0.42F)));
         int wrapWidth = Math.max(72, Math.round(maxLineWidth / scale));
         List<OrderedText> lines = wrapPreservingManualBreaks(textRenderer, message, wrapWidth);
 
-        while (lines.size() > MAX_LINES && maxLineWidth < Math.round(screenWidth * 0.5F)) {
-            maxLineWidth += 20;
+        while (lines.size() > MAX_LINES && maxLineWidth < Math.round(screenWidth * 0.55F)) {
+            maxLineWidth += 24;
             wrapWidth = Math.max(72, Math.round(maxLineWidth / scale));
             lines = wrapPreservingManualBreaks(textRenderer, message, wrapWidth);
-        }
-
-        if (lines.size() > MAX_LINES) {
-            return new ArrayList<>(lines.subList(0, MAX_LINES));
         }
 
         return lines;
@@ -158,32 +155,24 @@ public final class FloatingHelperTitleDialog {
     }
 
     private static IconBounds resolveIconBounds(FloatingHelperConfig config, int screenWidth, int screenHeight) {
-        int width = MathHelper.clamp(config.width, 24, Math.max(24, screenWidth));
-        int height = MathHelper.clamp(config.height, 24, Math.max(24, screenHeight));
+        int width = MathHelper.clamp(config.width, FloatingHelperConfig.MIN_SIZE, Math.max(FloatingHelperConfig.MIN_SIZE, screenWidth));
+        int height = MathHelper.clamp(config.height, FloatingHelperConfig.MIN_SIZE, Math.max(FloatingHelperConfig.MIN_SIZE, screenHeight));
         int maxX = Math.max(0, screenWidth - width);
         int maxY = Math.max(0, screenHeight - height);
 
         int x;
         int y;
-
         if (isValidRelative(config.relativeX) && isValidRelative(config.relativeY)) {
             x = maxX == 0 ? 0 : (int) Math.round(MathHelper.clamp((float) config.relativeX, 0.0F, 1.0F) * maxX);
             y = maxY == 0 ? 0 : (int) Math.round(MathHelper.clamp((float) config.relativeY, 0.0F, 1.0F) * maxY);
         } else {
-            x = config.x < 0 ? Math.max(0, screenWidth - width - 12) : config.x;
-            y = config.y < 0 ? Math.max(0, screenHeight - height - 12) : config.y;
+            x = config.x < 0 ? Math.max(0, screenWidth - width - FloatingHelperConfig.DEFAULT_MARGIN) : config.x;
+            y = config.y < 0 ? Math.max(0, screenHeight - height - FloatingHelperConfig.DEFAULT_MARGIN) : config.y;
         }
 
         x = MathHelper.clamp(x, 0, maxX);
         y = MathHelper.clamp(y, 0, maxY);
         return new IconBounds(x, y, width, height);
-    }
-
-    private static boolean intersects(int leftA, int topA, int widthA, int heightA, int leftB, int topB, int widthB, int heightB) {
-        return leftA < leftB + widthB
-                && leftA + widthA > leftB
-                && topA < topB + heightB
-                && topA + heightA > topB;
     }
 
     private static boolean isValidRelative(double value) {
@@ -202,6 +191,6 @@ public final class FloatingHelperTitleDialog {
         }
     }
 
-    private record TextLayout(List<OrderedText> lines, float scale, int x, int y, int textWidth) {
+    public record TextLayout(List<OrderedText> lines, float scale, int x, int y, int textWidth, int textHeight) {
     }
 }

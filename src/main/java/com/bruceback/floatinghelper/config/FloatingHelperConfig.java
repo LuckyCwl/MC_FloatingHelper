@@ -14,4 +14,9 @@ public class FloatingHelperConfig {
     public double relativeX = -1.0D;
     public double relativeY = -1.0D;
     public boolean mirrored = false;
+
+    public int textX = -1;
+    public int textY = -1;
+    public double textRelativeX = -1.0D;
+    public double textRelativeY = -1.0D;
 }
