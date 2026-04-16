@@ -87,6 +87,8 @@ public class FloatingHelperConfigScreen extends Screen {
         copy.height = source.height;
         copy.relativeX = source.relativeX;
         copy.relativeY = source.relativeY;
+        copy.mirrored = source.mirrored;
+        copy.collapsedToSidebar = source.collapsedToSidebar;
         return copy;
     }
 }

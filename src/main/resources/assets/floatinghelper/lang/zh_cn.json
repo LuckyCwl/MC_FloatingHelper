@@ -1,3 +1,7 @@
 {
-  "modmenu.descriptionTranslation.floatinghelper": "配置主界面和游戏内显示的悬浮图标。"
+  "modmenu.descriptionTranslation.floatinghelper": "配置主界面和游戏内显示的悬浮界面。",
+  "key.category.floatinghelper": "FloatingHelper",
+  "key.floatinghelper.retract": "收回或展开界面",
+  "key.floatinghelper.snap_sidebar": "吸附到最近侧边栏",
+  "key.floatinghelper.open_config": "打开 FloatingHelper 配置"
 }

@@ -31,15 +31,28 @@ public class FloatingHelperLayoutScreen extends Screen {
     protected void init() {
         FloatingHelperConfigManager.ensureValidBounds(workingCopy, width, height);
         clampBounds();
+        int buttonWidth = 72;
+        int buttonGap = 8;
+        int totalWidth = buttonWidth * 4 + buttonGap * 3;
+        int buttonLeft = (width - totalWidth) / 2;
+        int buttonY = height - 28;
 
         addDrawableChild(ButtonWidget.builder(Text.literal("重置"), button -> {
                     workingCopy.width = FloatingHelperConfig.DEFAULT_WIDTH;
                     workingCopy.height = FloatingHelperConfig.DEFAULT_HEIGHT;
                     workingCopy.x = width - workingCopy.width - FloatingHelperConfig.DEFAULT_MARGIN;
                     workingCopy.y = FloatingHelperConfig.DEFAULT_MARGIN;
+                    workingCopy.collapsedToSidebar = false;
                     FloatingHelperConfigManager.updateRelativePosition(workingCopy, width, height);
                 })
-                .dimensions(width / 2 - 154, height - 28, 100, 20)
+                .dimensions(buttonLeft, buttonY, buttonWidth, 20)
+                .build());
+
+        addDrawableChild(ButtonWidget.builder(mirrorButtonText(), button -> {
+                    workingCopy.mirrored = !workingCopy.mirrored;
+                    button.setMessage(mirrorButtonText());
+                })
+                .dimensions(buttonLeft + buttonWidth + buttonGap, buttonY, buttonWidth, 20)
                 .build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("保存"), button -> {
@@ -48,11 +61,11 @@ public class FloatingHelperLayoutScreen extends Screen {
                     FloatingHelperConfigManager.update(workingCopy);
                     client.setScreen(parent);
                 })
-                .dimensions(width / 2 - 50, height - 28, 100, 20)
+                .dimensions(buttonLeft + (buttonWidth + buttonGap) * 2, buttonY, buttonWidth, 20)
                 .build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("取消"), button -> client.setScreen(parent))
-                .dimensions(width / 2 + 54, height - 28, 100, 20)
+                .dimensions(buttonLeft + (buttonWidth + buttonGap) * 3, buttonY, buttonWidth, 20)
                 .build());
     }
 
@@ -60,7 +73,7 @@ public class FloatingHelperLayoutScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0x88000000);
 
-        FloatingIconWidget.render(context, workingCopy.x, workingCopy.y, workingCopy.width, workingCopy.height);
+        FloatingIconWidget.render(context, workingCopy.x, workingCopy.y, workingCopy.width, workingCopy.height, workingCopy.mirrored, workingCopy.collapsedToSidebar);
         drawBorder(context, workingCopy.x - 1, workingCopy.y - 1, workingCopy.width + 2, workingCopy.height + 2, 0xFFFF4D4D);
 
         drawHandle(context, workingCopy.x, workingCopy.y, mouseX, mouseY);
@@ -69,7 +82,7 @@ public class FloatingHelperLayoutScreen extends Screen {
         drawHandle(context, workingCopy.x + workingCopy.width, workingCopy.y + workingCopy.height, mouseX, mouseY);
 
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal("拖拽图案移动，拖拽红色角点缩放"), width / 2, 32, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer, Text.literal("拖拽图案移动，拖拽红色角点缩放，可切换镜像"), width / 2, 32, 0xE0E0E0);
         super.render(context, mouseX, mouseY, deltaTicks);
     }
 
@@ -218,6 +231,10 @@ public class FloatingHelperLayoutScreen extends Screen {
         workingCopy.height = MathHelper.clamp(workingCopy.height, FloatingHelperConfig.MIN_SIZE, height);
         workingCopy.x = MathHelper.clamp(workingCopy.x, 0, Math.max(0, width - workingCopy.width));
         workingCopy.y = MathHelper.clamp(workingCopy.y, 0, Math.max(0, height - workingCopy.height));
+    }
+
+    private Text mirrorButtonText() {
+        return Text.literal(workingCopy.mirrored ? "镜像：开" : "镜像：关");
     }
 
     private enum DragMode {

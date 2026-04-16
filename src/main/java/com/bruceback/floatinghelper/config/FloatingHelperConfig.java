@@ -13,4 +13,6 @@ public class FloatingHelperConfig {
     public int height = DEFAULT_HEIGHT;
     public double relativeX = -1.0D;
     public double relativeY = -1.0D;
+    public boolean mirrored = false;
+    public boolean collapsedToSidebar = false;
 }

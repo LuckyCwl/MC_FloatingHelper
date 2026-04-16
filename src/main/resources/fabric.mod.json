@@ -3,7 +3,7 @@
   "id": "floatinghelper",
   "version": "${version}",
   "name": "FloatingHelper",
-  "description": "Show the FloatingHelper icon only on the Minecraft title screen.",
+  "description": "Show the FloatingHelper UI on the Minecraft title screen and in game.",
   "authors": [
     "bruceback"
   ],
@@ -12,7 +12,7 @@
     "sources": "https://github.com/bruceback/FloatingHelper"
   },
   "license": "MIT",
-  "icon": "assets/floatinghelper/textures/gui/icon.png",
+  "icon": "assets/floatinghelper/textures/gui/yc_ui.png",
   "environment": "client",
   "entrypoints": {
     "client": [

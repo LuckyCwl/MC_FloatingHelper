@@ -1,3 +1,7 @@
 {
-  "modmenu.descriptionTranslation.floatinghelper": "Configure the floating icon shown on the title screen and in game."
+  "modmenu.descriptionTranslation.floatinghelper": "Configure the floating UI shown on the title screen and in game.",
+  "key.category.floatinghelper": "FloatingHelper",
+  "key.floatinghelper.retract": "Retract or expand UI",
+  "key.floatinghelper.snap_sidebar": "Snap to nearest sidebar",
+  "key.floatinghelper.open_config": "Open FloatingHelper config"
 }
